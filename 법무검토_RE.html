@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NHN KCP 법무 검토 요청 폼 (Beta)</title>
+    <style>
+        :root {
+            --primary: #0284C7;
+            --bg: #F8FAFC;
+            --surface: #FFFFFF;
+            --border: #CBD5E1;
+            --text-main: #0F172A;
+            --text-sub: #475569;
+        }
+
+        * { box-sizing: border-box; font-family: 'Malgun Gothic', '맑은 고딕', sans-serif; }
+        body { background-color: var(--bg); color: var(--text-main); margin: 0; padding: 0; display: flex; justify-content: center; padding-bottom: 100px; }
+        
+        .form-container { width: 100%; max-width: 900px; background: var(--surface); padding: 40px; border-radius: 0 0 20px 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.03); margin-top: 0; }
+        .header-title { font-size: 1.8rem; font-weight: 900; color: #0F172A; text-align: center; margin-bottom: 5px; letter-spacing: -0.5px; }
+        .header-subtitle { text-align: center; color: var(--text-sub); font-size: 0.95rem; margin-bottom: 30px; }
+        
+        .section-title { font-size: 1.15rem; font-weight: 800; border-bottom: 2px solid var(--text-main); padding-bottom: 10px; margin: 35px 0 20px 0; color: var(--text-main); }
+        
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; font-size: 0.95rem; font-weight: 700; margin-bottom: 8px; color: #334155; }
+        .field-hint { font-size: 0.82rem; color: #64748B; margin-top: 6px; line-height: 1.4; }
+        
+        input[type="text"], input[type="date"], select, textarea {
+            width: 100%; padding: 12px 15px; font-size: 1rem; border: 1px solid var(--border); border-radius: 8px; background: #F1F5F9; outline: none; transition: 0.2s;
+        }
+        input:focus, select:focus, textarea:focus { border-color: var(--primary); background: #FFF; box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.1); }
+        textarea { min-height: 100px; resize: vertical; }
+        
+        .radio-group { display: flex; gap: 15px; flex-wrap: wrap; background: #F8FAFC; padding: 12px 15px; border-radius: 8px; border: 1px solid #E2E8F0; }
+        .check-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; background: #F8FAFC; padding: 20px; border-radius: 12px; border: 1px solid #E2E8F0; align-items: start; }
+        .check-label { display: flex; align-items: flex-start; gap: 10px; font-size: 0.95rem; color: var(--text-sub); cursor: pointer; line-height: 1.4; }
+        .check-label input { margin-top: 3px; transform: scale(1.1); }
+        .char-counter { font-size: 0.85rem; text-align: right; margin-top: 8px; font-weight: bold; color: var(--text-sub); }
+        .char-over { color: #E11D48; }
+        .hidden { display: none !important; }
+
+        .dynamic-sub-container { margin-left: 28px; margin-top: 8px; display: flex; flex-direction: column; gap: 8px; animation: slideDown 0.3s ease-out; }
+        .dynamic-input { width: 100%; padding: 10px 12px !important; font-size: 0.9rem !important; border: 1px solid #93C5FD !important; background: #EFF6FF !important; border-radius: 6px; }
+        textarea.dynamic-input { min-height: 150px; line-height: 1.6; white-space: pre; }
+        
+        .info-box { margin-left: 15px; margin-top: 10px; background: #EFF6FF; border: 1px solid #93C5FD; padding: 12px 15px; border-radius: 8px; color: #1D4ED8; font-size: 0.85rem; line-height: 1.5; font-weight: 600; animation: slideDown 0.3s ease-out; }
+        .spec-item { animation: slideDown 0.3s ease-out; overflow: hidden; transition: opacity 0.3s, height 0.3s, margin 0.3s; }
+
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
+
+        .bottom-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); padding: 20px; display: flex; justify-content: center; border-top: 1px solid #E2E8F0; box-shadow: 0 -10px 20px rgba(0,0,0,0.03); z-index: 100; }
+        .generate-btn { background: linear-gradient(135deg, #0F172A, #1E293B); color: #FFF; border: none; padding: 15px 40px; font-size: 1.15rem; font-weight: 800; border-radius: 12px; cursor: pointer; transition: 0.3s; box-shadow: 0 8px 20px rgba(15, 23, 42, 0.2); }
+        .generate-btn:hover { transform: translateY(-3px); box-shadow: 0 12px 25px rgba(15, 23, 42, 0.3); background: #000; }
+
+        /* 모달 공통 */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(8px); display: none; justify-content: center; align-items: center; z-index: 999; opacity: 0; transition: opacity 0.3s; }
+        .modal-overlay.show { display: flex; opacity: 1; animation: fadeIn 0.25s; }
+        
+        /* 3단 결과창용 확장 컨테이너 */
+        .modal-container { width: 96%; max-width: 1320px; background: #F8FAFC; border-radius: 20px; display: flex; flex-direction: column; max-height: 92vh; overflow: hidden; box-shadow: 0 25px 50px rgba(0,0,0,0.3); }
+        .modal-container.alert-mode { max-width: 540px; background: #FFFFFF; text-align: center; }
+        
+        .modal-header { background: #FFFFFF; padding: 18px 28px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #E2E8F0; flex-shrink: 0; }
+        .modal-header.alert-mode { justify-content: center; border-bottom: none; padding: 28px 28px 12px; }
+        .modal-header h2 { margin: 0; font-size: 1.35rem; color: #0F172A; display: flex; align-items: center; gap: 10px; font-weight: 800; }
+        .close-btn { background: #F1F5F9; border: none; font-size: 1.2rem; font-weight: bold; color: #475569; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; transition: 0.2s; flex-shrink: 0; }
+        .close-btn:hover { background: #E2E8F0; color: #0F172A; }
+        .modal-body { padding: 24px 28px; overflow-y: auto; display: flex; flex-direction: column; gap: 18px; }
+
+        /* 경고 팝업 전용 본문 (Flex 분리, 균일한 문단 간격 및 자연스러운 줄바꿈) */
+        .alert-body {
+            display: block;
+            padding: 8px 34px 24px;
+            font-size: 1rem;
+            line-height: 1.6;
+            color: #334155;
+            word-break: keep-all;
+            text-wrap: balance;
+            text-align: center;
+        }
+        .alert-body p { margin: 0 0 12px 0; }
+        .alert-body p:last-child { margin-bottom: 0; }
+        .alert-body .alert-emphasis { color: #E11D48; font-weight: 900; font-size: 1.04rem; line-height: 1.55; }
+        .alert-body .alert-sub { font-size: 0.88rem; color: #64748B; }
+        .alert-footer { padding: 0 34px 28px; }
+        .alert-confirm-btn { background: #0F172A; color: #FFF; border: none; padding: 14px 30px; font-size: 1.05rem; font-weight: 800; border-radius: 10px; cursor: pointer; width: 100%; transition: 0.2s; }
+        .alert-confirm-btn:hover { background: #1E293B; }
+
+        .guide-box { background: #FEF2F2; border: 1px solid #FCA5A5; padding: 14px 20px; border-radius: 12px; color: #991B1B; font-size: 0.92rem; line-height: 1.6; font-weight: 600; flex-shrink: 0; }
+        .c-grade-pill { display: inline-block; background: #7C3AED; color: #FFF; font-size: 0.78rem; padding: 3px 9px; border-radius: 999px; margin-left: 8px; vertical-align: middle; font-weight: 800; }
+
+        /* 3단 결과 카드 및 하단 2분할 그리드 */
+        .modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; flex-shrink: 0; }
+        .result-card { border-radius: 12px; overflow: hidden; box-shadow: 0 5px 15px rgba(0,0,0,0.05); display: flex; flex-direction: column; border: 1px solid #E2E8F0; background: #FFFFFF; flex-shrink: 0; min-width: 0; }
+        .card-head { padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; gap: 10px; font-weight: 800; font-size: 1rem; flex-shrink: 0; }
+        .card-head span { word-break: keep-all; }
+        .card-body { padding: 20px 22px; font-size: 0.93rem; line-height: 1.6; white-space: pre-wrap; word-break: break-word; background: #FFFFFF; color: #1E293B; overflow-y: auto; }
+        .card-body.doc-scroll { height: 400px; }
+        
+        .copy-btn { border: none; padding: 8px 16px; border-radius: 8px; font-weight: 800; cursor: pointer; transition: 0.2s; color: #FFF; font-size: 0.88rem; flex-shrink: 0; white-space: nowrap; }
+        .copy-btn:hover { filter: brightness(1.1); transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.15); }
+        
+        .theme-green .card-head { background: #ECFDF5; color: #047857; border-top: 4px solid #10B981; border-bottom: 1px solid #D1FAE5; }
+        .theme-green .copy-btn { background: #10B981; }
+        .theme-blue .card-head { background: #EFF6FF; color: #1D4ED8; border-top: 4px solid #3B82F6; border-bottom: 1px solid #DBEAFE; }
+        .theme-blue .copy-btn { background: #3B82F6; }
+        .theme-purple .card-head { background: #F5F3FF; color: #6D28D9; border-top: 4px solid #8B5CF6; border-bottom: 1px solid #EDE9FE; }
+        .theme-purple .copy-btn { background: #8B5CF6; }
+        .theme-purple.highlight-c { border: 2px solid #8B5CF6; box-shadow: 0 8px 24px rgba(139, 92, 246, 0.18); }
+
+        @media (max-width: 900px) {
+            .modal-grid { grid-template-columns: 1fr; }
+            .card-body.doc-scroll { height: 320px; }
+            .grid-2, .check-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="form-container">
+        <div class="header-title">NHN KCP 법무 검토 요청 폼 (Beta)</div>
+        <div class="header-subtitle">작성자, 부서명, 첨부파일은 두레이 시스템 태그를 이용하므로 본 폼에서는 생략됩니다.</div>
+        
+        <div class="section-title">A. 기본 정보 및 업무 구분</div>
+        <div class="grid-2">
+            <div class="form-group"><label>회신 희망일</label><input type="date" id="targetDate"></div>
+            <div class="form-group"><label>긴급도</label>
+                <select id="urgency">
+                    <option value="보통">보통 (일반 검토 기한 적용)</option>
+                    <option value="긴급" style="color: #E11D48; font-weight: bold;">긴급 (우선 검토 필요 - 팀당 연 5회 한도)</option>
+                </select>
+            </div>
+        </div>
+        <div class="grid-2">
+            <div class="form-group">
+                <label><span style="color:#E11D48;">*</span> 담당업무 (필수 선택)</label>
+                <select id="category" onchange="handleCategoryChange()">
+                    <option value="">-- 업무 구분을 선택하세요 --</option>
+                    <option value="1. 계약서 검토">1. 계약서 검토</option>
+                    <option value="2. 법령검토 (일반자문)">2. 법령검토 (일반자문)</option>
+                    <option value="3. 법령검토 (개인·신용정보)">3. 법령검토 (개인·신용정보)</option>
+                    <option value="4. 신규사업 및 신규 라이선스 취득">4. 신규사업 및 신규 라이선스 취득</option>
+                    <option value="5. 소송업무">5. 소송업무</option>
+                    <option value="6. 기타 (도움이 필요한 영역)">6. 기타 (도움이 필요한 영역)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label><span style="color:#E11D48;">*</span> 업무 중요도 등급 (필수 선택)</label>
+                <select id="importanceGrade" onchange="handleGradeChange()">
+                    <option value="">-- 중요도 등급을 선택하세요 --</option>
+                    <option value="A등급">A등급 (가장 높은 중요도)</option>
+                    <option value="B등급">B등급</option>
+                    <option value="C등급" style="color: #6D28D9; font-weight: bold;">C등급 (Claude 가답안 활용)</option>
+                </select>
+                <div class="field-hint">※ A등급이 가장 높은 중요도이며, C등급은 Claude 가답안 활용 후 두레이에 사후 공유합니다.</div>
+            </div>
+        </div>
+
+        <div id="dynamicFieldsContainer" class="hidden">
+            <div class="section-title">B. 세부 사실관계 작성</div>
+            
+            <div class="form-group hidden" id="wrap_formType">
+                <label>1. 형식</label>
+                <div class="radio-group" id="radio_formType_contract">
+                    <label class="check-label"><input type="radio" name="formType" value="신규" onchange="handleFormTypeChange()"> 신규</label>
+                    <label class="check-label"><input type="radio" name="formType" value="연장(갱신)" onchange="handleFormTypeChange()"> 연장(갱신)</label>
+                    <label class="check-label"><input type="radio" name="formType" value="변경(추가/수정)" onchange="handleFormTypeChange()"> 변경(추가/수정)</label>
+                    <label class="check-label"><input type="radio" name="formType" value="종료(해지)" onchange="handleFormTypeChange()"> 종료(해지)</label>
+                    <label class="check-label"><input type="radio" name="formType" value="기타" onchange="handleFormTypeChange()"> 기타</label>
+                </div>
+            </div>
+
+            <div class="grid-2 hidden" id="wrap_partner">
+                <div class="form-group">
+                    <label><span style="color:#E11D48;">*</span> 계약상대방 (상호명)</label>
+                    <input type="text" id="partnerName" placeholder="예: (주)코세스 (두레이 제목에 자동 반영)">
+                </div>
+                <div class="form-group">
+                    <label>서비스 구분값 (선택)</label>
+                    <input type="text" id="serviceType" placeholder="예: 본인확인, PG, 위수탁 계약 등">
+                </div>
+            </div>
+
+            <div class="form-group hidden" id="wrap_term">
+                <label>계약기간 및 계약금액 (예상액)</label>
+                <input type="text" id="termAmount" placeholder="예: 1년 / 5,000만원">
+            </div>
+
+            <div class="form-group hidden" id="wrap_purpose">
+                <label><span style="color:#E11D48;">*</span> 계약 목적 (원하는 결과)</label>
+                <input type="text" id="purpose" placeholder="예: 계좌인증서비스 제공을 위한 계약 체결 도모">
+            </div>
+
+            <div class="form-group">
+                <label id="bgLabel">검토 배경 (어떤 상황인지)</label>
+                <textarea id="background" placeholder="사안이 발생한 배경이나 현재 상황을 편하게 적어주세요."></textarea>
+            </div>
+
+            <div class="form-group hidden" id="wrap_checks">
+                <label>추가 확인 사실관계 (해당 시 체크)</label>
+                <div class="check-grid" id="specificChecks"></div>
+            </div>
+
+            <div class="form-group" id="wrap_notes">
+                <label>기타 특이사항 (우려점 등)</label>
+                <input type="text" id="notes" placeholder="현업에서 우려하는 리스크나 참고할 사항이 있다면 적어주세요.">
+            </div>
+
+            <div class="section-title">C. 핵심 문의 사항</div>
+            <div class="form-group">
+                <label><span style="color:#E11D48;">*</span> 법무팀에 판단·검토받고 싶은 내용을 요약해주세요. (필수)</label>
+                <textarea id="coreInquiry" placeholder="(예시)&#10;1. 당사 표준계약서 내 해당 조건을 추가하여 체결해도 될지&#10;2. 첨부한 계약서대로 계약을 체결해도 될지" maxlength="300" oninput="updateCharCount()"></textarea>
+                <div class="char-counter" id="charCount">0 / 300자</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="bottom-bar">
+        <button class="generate-btn" onclick="openResultModal()">✨ 문서 자동 생성 (두레이 / Claude 복사용)</button>
+    </div>
+
+    <!-- 결과 모달 (상단 1단 제목 + 하단 2단 상세문의서/Claude 프롬프트) -->
+    <div id="resultModal" class="modal-overlay">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h2>✨ 문서 생성 완료 (용도에 맞게 복사하세요)</h2>
+                <button class="close-btn" onclick="closeResultModal()">✕</button>
+            </div>
+            
+            <div class="modal-body">
+                <div class="guide-box">
+                    💡 <b>두레이 업무 등록 가이드</b><br>
+                    - 담당자: <b>오재혁</b> 지정<br>
+                    - 참조자: 기본 법무팀 태그 <span id="guidePrivacy" class="hidden" style="color:#B91C1C;">+ <b>정보보호팀장 추가 (개인정보 건)</b></span><br>
+                    - 기획서, 계약서 원본 등의 첨부파일은 두레이 본문 클립 아이콘을 눌러 <b>직접 업로드</b> 해주세요.
+                    <div id="guideCGrade" class="hidden" style="margin-top: 8px; padding-top: 8px; border-top: 1px dashed #FCA5A5; color: #6D28D9;">
+                        ⚡ <b>[C등급 업무 안내]</b> ③번 프롬프트를 Claude에 입력하여 생성된 <b>가답안 파일</b>과 ②번 <b>상세 문의서</b>를 두레이 업무에 반드시 함께 첨부하여 법무팀에 공유해 주세요. (필요 시 법무팀 사후 검토·조정 진행)
+                    </div>
+                </div>
+
+                <!-- ① 두레이 제목란 입력용 (상단 전체 너비) -->
+                <div class="result-card theme-green">
+                    <div class="card-head">
+                        <span>① 법무팀 제출용 — 핵심 문의 (두레이 <b>'제목'</b>란 입력용)</span>
+                        <button class="copy-btn" onclick="copyText('out1', this)">📋 복사하기</button>
+                    </div>
+                    <div class="card-body" id="out1" style="min-height: 58px; height: auto; font-weight: bold; font-size: 1.05rem;"></div>
+                </div>
+
+                <!-- 하단 좌우 2분할 (② 두레이 본문 / ③ Claude 프롬프트) -->
+                <div class="modal-grid">
+                    <div class="result-card theme-blue">
+                        <div class="card-head">
+                            <span>② 상세 문의서 (두레이 <b>'본문'</b> 첨부용)</span>
+                            <button class="copy-btn" onclick="copyText('out2', this)">📋 복사하기</button>
+                        </div>
+                        <div class="card-body doc-scroll" id="out2"></div>
+                    </div>
+
+                    <div class="result-card theme-purple" id="claudeCard">
+                        <div class="card-head">
+                            <span>③ Claude AI 입력용 프롬프트 <span id="cGradeBadge" class="c-grade-pill hidden">C등급 가답안용</span></span>
+                            <button class="copy-btn" onclick="copyText('out3', this)">📋 복사하기</button>
+                        </div>
+                        <div class="card-body doc-scroll" id="out3"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 공용 중앙 잠금 경고 팝업 (4번 신규사업 & C등급 공용) -->
+    <div id="customAlertModal" class="modal-overlay">
+        <div class="modal-container alert-mode">
+            <div class="modal-header alert-mode">
+                <h2 id="customAlertTitle" style="font-size: 1.55rem; color: #E11D48;">⚠️ 주 의</h2>
+            </div>
+            <div id="customAlertBody" class="alert-body"></div>
+            <div class="alert-footer">
+                <button class="alert-confirm-btn" onclick="closeCustomAlert()">확인</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        window.onload = function() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('targetDate').min = today;
+        };
+
+        const specificData = {
+            "1. 계약서 검토": [
+                { q: "신규 계약 체결 건입니까?", v: "신규 계약 체결 건임" }, 
+                { q: "기존 계약의 변경·갱신·해지 건입니까?", v: "기존 계약의 변경·갱신·해지 건임" }, 
+                { q: "상대방이 제시한 계약서를 검토하는 것입니까?", v: "상대방이 제시한 계약서 검토 건임" },
+                { q: "사내 표준계약서와 다른 내용이 있습니까?", v: "사내 표준계약서와 다른 내용이 있음" },
+                { q: "자동연장(자동갱신) 조항이 있습니까?", v: "자동연장(자동갱신) 조항이 있음" },
+                { q: "손해배상·위약금·지체상금 조항이 포함됩니까?", v: "손해배상·위약금·지체상금 조항이 포함됨" },
+                { q: "비밀유지(NDA)·경업금지 조항이 있습니까?", v: "비밀유지(NDA)·경업금지 조항이 있음" },
+                { q: "완전히 새로운 계약서를 만들어야 하는 사안입니까?", v: "완전히 새로운 계약서 작성 필요", sub: [
+                    { type: "text", placeholder: "1) 당사자 (예: 당사, ㈜OOO)" },
+                    { type: "textarea", value: "2) 당사자 별 역할 기재\n- 당사자 A\n  1. \n  2. \n  3. \n  4. \n\n- 당사자 B \n  1. \n  2. \n  3. \n  4. " }
+                ]}
+            ],
+            "2. 법령검토 (일반자문)": [
+                { q: "특정 법령·조항의 해석이 필요합니까?", v: "특정 법령·조항의 해석이 필요함" },
+                { q: "관련 법령이 특정되어 있습니까?", v: "관련 법령이 특정되어 있음" },
+                { q: "행위(사업·거래)의 적법 여부 판단이 필요합니까?", v: "행위(사업·거래)의 적법 여부 판단이 필요함" },
+                { q: "감독기관의 유권해석·가이드라인이 있습니까?", v: "감독기관의 유권해석·가이드라인이 있음" },
+                { q: "누군가가 위법/위반행위 가능성을 언급한 사실이 있습니까?", v: "위법/위반행위 가능성 언급 사실 있음", sub: [
+                    { type: "text", placeholder: "1) 누가 언급했습니까?" },
+                    { type: "text", placeholder: "2) 어떤 의견을 제시했습니까?" },
+                    { type: "text", placeholder: "3) 어떤 근거로 제시했습니까?" }
+                ]}
+            ],
+            "3. 법령검토 (개인·신용정보)": [
+                { q: "개인정보가 수집·이용됩니까?", v: "개인정보가 수집·이용됨" },
+                { q: "신용정보가 처리됩니까?", v: "신용정보가 처리됨" },
+                { q: "제3자 제공·처리위탁이 발생합니까?", v: "제3자 제공·처리위탁이 발생함" },
+                { q: "개인정보 및 신용정보의 국외 이전이 있습니까?", v: "개인정보 및 신용정보의 국외 이전이 있음" },
+                { q: "정보주체(고객)의 동의를 받습니까?", v: "정보주체(고객)의 동의를 받음" },
+                { q: "가명 및 익명 처리가 관련됩니까?", v: "가명 및 익명 처리가 관련됨" },
+                { q: "마케팅 활용 목적이 포함됩니까?", v: "마케팅 활용 목적이 포함됨" },
+                { q: "유출·침해 사고가 발생했습니까?", v: "유출·침해 사고가 발생함" },
+                { q: "누군가가 위법/위반행위 가능성을 언급한 사실이 있습니까?", v: "위법/위반행위 가능성 언급 사실 있음", sub: [
+                    { type: "text", placeholder: "1) 누가 언급했습니까?" },
+                    { type: "text", placeholder: "2) 어떤 의견을 제시했습니까?" },
+                    { type: "text", placeholder: "3) 어떤 근거로 제시했습니까?" }
+                ]}
+            ],
+            "4. 신규사업 및 신규 라이선스 취득": [
+                { q: "자금·결제·금융 관련 기능이 포함됩니까?", v: "자금·결제·금융 관련 기능이 포함됨" },
+                { q: "외부 제휴 및 투자 구조가 포함됩니까?", v: "외부 제휴 및 투자 구조가 포함됨" },
+                { q: "출시(런칭) 일정이 정해져 있습니까?", v: "출시(런칭) 일정이 정해져 있음" },
+                { 
+                    q: "시장에서 유사한 사업을 영위하고 있는 사업자가 있습니까? (필수 선택)", 
+                    type: "radio", 
+                    vPrefix: "시장에 유사 사업자",
+                    infoBoxText: "💡 해당 사업자가 추진하는 사업을 확인할 수 있는 자료를 두레이 본문에 첨부하여 주시기 바랍니다.<br>(그 사업자의 라이선스 보유목록 현황 등 확인 가능 범위에서 최대한 전달)"
+                }
+            ],
+            "5. 소송업무": [
+                { q: "상대방이 아는 업체나 사람입니까?", v: "상대방과 기존에 안면이 있는 관계임", sub: [
+                    { type: "text", placeholder: "알게 된 경로(계약, 미팅 등)를 기재해주세요" }
+                ]},
+                { 
+                    q: "상대방과 분쟁이전까지 커뮤니케이션을 진행하였습니까?", 
+                    v: "분쟁 이전 커뮤니케이션 진행 사실 있음", 
+                    infoBoxText: "💡 커뮤니케이션 히스토리와 증빙내역을 캡처/파일 형태로 첨부하여 주시기 바랍니다.<br>[이메일, 문자, 공문(내용증명 포함), 녹취파일, 의사록 등]" 
+                }
+            ],
+            "6. 기타 (도움이 필요한 영역)": [
+                { q: "관련 부서를 정확히 모르는 경우입니까?", v: "관련 부서를 정확히 모르는 경우임" },
+                { q: "단순 의견·방향성 조언이 필요합니까?", v: "단순 의견·방향성 조언이 필요함" },
+                { q: "고객사에서 특별히 확인을 요청하는 경우 입니까?", v: "고객사에서 특별히 확인을 요청한 경우임" }
+            ]
+        };
+
+        // 중앙 잠금 팝업 호출 (확인 버튼 클릭 전까지 폼 이용 차단)
+        function showBlockingAlert(titleText, bodyHtml, titleColor) {
+            const titleEl = document.getElementById('customAlertTitle');
+            const bodyEl = document.getElementById('customAlertBody');
+            titleEl.innerText = titleText;
+            titleEl.style.color = titleColor || "#E11D48";
+            bodyEl.innerHTML = bodyHtml;
+            document.getElementById('customAlertModal').classList.add('show');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeCustomAlert() {
+            document.getElementById('customAlertModal').classList.remove('show');
+            if (!document.getElementById('resultModal').classList.contains('show')) {
+                document.body.style.overflow = 'auto';
+            }
+        }
+
+        let previousGrade = "";
+        function handleGradeChange() {
+            const grade = document.getElementById('importanceGrade').value;
+            if (grade === "C등급" && previousGrade !== "C등급") {
+                showBlockingAlert(
+                    "⚠️ 주 의 (C등급 업무 안내)",
+                    `<p>C등급 업무의 경우, <b>Claude가 생성하는 답안을 활용</b>합니다.</p>
+                    <p class="alert-emphasis">단, 해당 건에 대해서도 두레이 업무에 Claude가 생성한 답안 파일과 상세 문의서(두레이 본문 첨부용)를 반드시 첨부하여 주시길 바랍니다.</p>
+                    <p class="alert-sub">(법무팀에 C등급 사안임을 공유하며, 필요 시 사후 검토 및 조정이 진행됩니다.)</p>`,
+                    "#6D28D9"
+                );
+            }
+            previousGrade = grade;
+        }
+
+        let previousCategory = "";
+        function handleCategoryChange() {
+            const category = document.getElementById('category').value;
+            const dynContainer = document.getElementById('dynamicFieldsContainer');
+            
+            const wrap_formType = document.getElementById('wrap_formType');
+            const radio_formType_contract = document.getElementById('radio_formType_contract');
+            const wrap_partner = document.getElementById('wrap_partner');
+            const wrap_term = document.getElementById('wrap_term');
+            const wrap_purpose = document.getElementById('wrap_purpose');
+            const wrap_checks = document.getElementById('wrap_checks');
+            const bgLabel = document.getElementById('bgLabel');
+            
+            if (!category) { 
+                dynContainer.classList.add('hidden'); 
+                previousCategory = "";
+                return; 
+            }
+            dynContainer.classList.remove('hidden');
+
+            wrap_formType.classList.add('hidden');
+            radio_formType_contract.classList.add('hidden');
+            wrap_partner.classList.add('hidden');
+            wrap_term.classList.add('hidden');
+            wrap_purpose.classList.add('hidden');
+            wrap_checks.classList.add('hidden');
+            bgLabel.innerText = "검토 배경 및 상황 설명";
+
+            if (category.startsWith("1.")) { 
+                wrap_formType.classList.remove('hidden');
+                radio_formType_contract.classList.remove('hidden');
+                wrap_partner.classList.remove('hidden');
+                wrap_term.classList.remove('hidden');
+                wrap_purpose.classList.remove('hidden');
+                document.querySelector('#wrap_purpose label').innerHTML = '<span style="color:#E11D48;">*</span> 계약 목적 (원하는 결과)';
+            } 
+            else if (category.startsWith("3.")) { 
+                wrap_formType.classList.remove('hidden');
+                radio_formType_contract.classList.remove('hidden');
+                bgLabel.innerText = "검토 배경";
+                document.getElementById('guidePrivacy').classList.remove('hidden');
+            } 
+            
+            if (!category.startsWith("3.")) {
+                document.getElementById('guidePrivacy').classList.add('hidden');
+            }
+
+            if (category.startsWith("4.") && !previousCategory.startsWith("4.")) {
+                showBlockingAlert(
+                    "⚠️ 주 의",
+                    `<p>해당 업무의 경우, 기획서 초안 파일을 반드시 첨부해주시기를 바랍니다.</p>
+                    <p class="alert-emphasis">미첨부 시, 법무 검토 진행이 개시되지 않음을 알려드립니다.</p>`,
+                    "#E11D48"
+                );
+            }
+            previousCategory = category;
+
+            renderSpecificChecks(category, wrap_checks);
+        }
+
+        function handleFormTypeChange() {
+            const category = document.getElementById('category').value;
+            if (!category.startsWith("1.")) return; 
+
+            const checkedRadio = document.querySelector('input[name="formType"]:checked');
+            const formType = checkedRadio ? checkedRadio.value : "";
+
+            const wrapNew = document.getElementById('wrap_chk_spec_0'); 
+            const wrapMod = document.getElementById('wrap_chk_spec_1'); 
+
+            if(wrapNew) wrapNew.classList.remove('hidden');
+            if(wrapMod) wrapMod.classList.remove('hidden');
+
+            if (formType && formType !== "기타") {
+                if(wrapNew) {
+                    wrapNew.classList.add('hidden');
+                    document.getElementById('chk_spec_0').checked = false;
+                }
+                if(wrapMod) {
+                    wrapMod.classList.add('hidden');
+                    document.getElementById('chk_spec_1').checked = false;
+                }
+            }
+        }
+
+        function renderSpecificChecks(category, wrap_checks) {
+            const container = document.getElementById('specificChecks');
+            container.innerHTML = "";
+            const questions = specificData[category];
+            
+            if(!questions || questions.length === 0) {
+                wrap_checks.classList.add('hidden');
+                return;
+            }
+            wrap_checks.classList.remove('hidden');
+
+            questions.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = "spec-item"; 
+                div.style.display = "flex";
+                div.style.flexDirection = "column";
+                
+                let chkId = `chk_spec_${index}`;
+                div.id = `wrap_${chkId}`; 
+
+                if (item.type === 'radio') {
+                    div.innerHTML = `
+                        <label style="font-size: 0.95rem; color: var(--text-sub); display: block; margin-bottom: 6px; line-height: 1.4; font-weight: 700; word-break: keep-all;">${item.q}</label>
+                        <div style="display: flex; gap: 20px; padding-left: 5px;">
+                            <label class="check-label"><input type="radio" name="${chkId}" value="있음" onchange="toggleInfoBox('info_${chkId}', true)"> 있음</label>
+                            <label class="check-label"><input type="radio" name="${chkId}" value="없음" onchange="toggleInfoBox('info_${chkId}', false)"> 없음</label>
+                        </div>
+                        <div id="info_${chkId}" class="info-box hidden">${item.infoBoxText}</div>
+                    `;
+                    div.dataset.radioId = chkId;
+                    div.dataset.vPrefix = item.vPrefix;
+                    container.appendChild(div);
+                } 
+                else {
+                    const label = document.createElement('label');
+                    label.className = 'check-label';
+                    let onchangeHandler = "";
+                    let htmlToAppend = "";
+
+                    if (item.sub) {
+                        let subHtml = `<div id="subCont_${chkId}" class="dynamic-sub-container hidden">`;
+                        item.sub.forEach((subObj, i) => {
+                            if(subObj.type === "textarea") {
+                                subHtml += `<textarea id="sub_${chkId}_${i}" class="dynamic-input" spellcheck="false">${subObj.value}</textarea>`;
+                            } else {
+                                subHtml += `<input type="text" id="sub_${chkId}_${i}" class="dynamic-input" placeholder="${subObj.placeholder}">`;
+                            }
+                        });
+                        subHtml += `</div>`;
+                        htmlToAppend += subHtml;
+                        onchangeHandler += `toggleSubInput('${chkId}', 'subCont_${chkId}'); `;
+                    }
+
+                    if (item.infoBoxText) {
+                        htmlToAppend += `<div id="info_${chkId}" class="info-box hidden">${item.infoBoxText}</div>`;
+                        onchangeHandler += `toggleInfoBox('info_${chkId}', this.checked); `;
+                    }
+
+                    let onchangeAttr = onchangeHandler ? `onchange="${onchangeHandler}"` : "";
+                    label.innerHTML = `<input type="checkbox" id="${chkId}" value="${item.v}" ${onchangeAttr}> ${item.q}`;
+                    div.appendChild(label);
+                    
+                    if (htmlToAppend) {
+                        const wrapper = document.createElement('div');
+                        wrapper.innerHTML = htmlToAppend;
+                        while (wrapper.firstChild) div.appendChild(wrapper.firstChild);
+                    }
+                    container.appendChild(div);
+                }
+            });
+
+            if (category.startsWith("1.")) {
+                handleFormTypeChange();
+            }
+        }
+
+        function toggleInfoBox(infoId, isVisible) {
+            const infoBox = document.getElementById(infoId);
+            if(isVisible) infoBox.classList.remove('hidden');
+            else infoBox.classList.add('hidden');
+        }
+
+        function toggleSubInput(chkId, containerId) {
+            const chk = document.getElementById(chkId);
+            const subCont = document.getElementById(containerId);
+            if (chk.checked) {
+                subCont.classList.remove('hidden');
+            } else {
+                subCont.classList.add('hidden');
+                const inputs = subCont.querySelectorAll('input[type="text"], textarea');
+                inputs.forEach(input => {
+                    if(input.tagName === 'TEXTAREA') input.value = "2) 당사자 별 역할 기재\n- 당사자 A\n  1. \n  2. \n  3. \n  4. \n\n- 당사자 B \n  1. \n  2. \n  3. \n  4. ";
+                    else input.value = ""; 
+                }); 
+            }
+        }
+
+        function updateCharCount() {
+            const text = document.getElementById('coreInquiry').value;
+            const counter = document.getElementById('charCount');
+            counter.innerText = `${text.length} / 300자`;
+            if (text.length >= 300) counter.classList.add('char-over');
+            else counter.classList.remove('char-over');
+        }
+
+        function getCheckedValues() {
+            let arr = [];
+            const containerId = 'specificChecks';
+            const boxes = document.querySelectorAll(`#${containerId} input[type="checkbox"]:checked`);
+            boxes.forEach(b => {
+                if (b.id && b.id.startsWith('chk_spec_')) {
+                    const subCont = document.getElementById('subCont_' + b.id);
+                    if (subCont && !subCont.classList.contains('hidden')) {
+                        const inputs = subCont.querySelectorAll('input[type="text"], textarea');
+                        let subTexts = [];
+                        inputs.forEach(input => { if(input.value.trim()) subTexts.push(input.value.trim()); });
+                        if(subTexts.length > 0) arr.push(`- ${b.value}\n  ↳ [상세내용]\n  ${subTexts.join('\n  ')}`);
+                        else arr.push("- " + b.value);
+                    } else arr.push("- " + b.value);
+                }
+            });
+
+            const radioGroups = document.querySelectorAll(`#${containerId} div[data-radio-id]`);
+            radioGroups.forEach(group => {
+                const rId = group.dataset.radioId;
+                const prefix = group.dataset.vPrefix;
+                const checkedOption = document.querySelector(`input[name="${rId}"]:checked`);
+                if (checkedOption) arr.push(`- ${prefix} ${checkedOption.value}`);
+            });
+
+            return arr.length > 0 ? arr.join("\n") : "- (체크된 특이사항 없음)";
+        }
+
+        function openResultModal() {
+            const category = document.getElementById('category').value;
+            const grade = document.getElementById('importanceGrade').value;
+
+            if (!category) { alert("담당업무 구분을 선택해주세요."); return; }
+            if (!grade) { alert("🚨 [필수] '업무 중요도 등급(A/B/C)'을 선택해주세요."); return; }
+
+            const targetDate = document.getElementById('targetDate').value || "협의";
+            const urgency = document.getElementById('urgency').value;
+            const partner = document.getElementById('partnerName').value.trim();
+            const service = document.getElementById('serviceType').value.trim();
+            const purpose = document.getElementById('purpose').value.trim();
+            const coreInquiry = document.getElementById('coreInquiry').value.trim();
+            const background = document.getElementById('background').value.trim() || "내용 없음";
+            const notes = document.getElementById('notes').value.trim() || "내용 없음";
+            
+            let formType = "";
+            if (category.startsWith("1.") || category.startsWith("3.")) {
+                const checked = document.querySelector('input[name="formType"]:checked');
+                formType = checked ? checked.value : "미선택";
+            }
+
+            if (category.startsWith("1.") && !partner) { alert("🚨 [필수] '계약상대방'을 입력해주세요. (제목 생성에 필요합니다)"); return; }
+            if (category.startsWith("1.") && !purpose) { alert("🚨 [필수] '계약 목적 (원하는 결과)'을 입력해주세요."); return; }
+            if (!coreInquiry) { alert("🚨 [필수] '법무팀에 판단·검토받고 싶은 내용'을 작성해주세요."); return; }
+            if (category.startsWith("4.")) {
+                if (!document.querySelector('#specificChecks input[type="radio"]:checked')) {
+                    alert("🚨 [필수] '시장에서 유사한 사업을 영위하고 있는 사업자' 유무를 체크해 주십시오."); return;
+                }
+            }
+
+            // C등급 전용 UI 강조 토글
+            const guideCGrade = document.getElementById('guideCGrade');
+            const cGradeBadge = document.getElementById('cGradeBadge');
+            const claudeCard = document.getElementById('claudeCard');
+            if (grade === "C등급") {
+                guideCGrade.classList.remove('hidden');
+                cGradeBadge.classList.remove('hidden');
+                claudeCard.classList.add('highlight-c');
+            } else {
+                guideCGrade.classList.add('hidden');
+                cGradeBadge.classList.add('hidden');
+                claudeCard.classList.remove('highlight-c');
+            }
+
+            // ① 두레이 제목 생성 (등급 + 긴급도 자동 반영)
+            let titleText = "";
+            let urgBadge = urgency === "긴급" ? " [긴급]" : "";
+            if (category.startsWith("1.")) {
+                titleText = `[${grade}] [${partner}] ${service ? service + ' ' : ''}계약서 검토 요청${urgBadge}`;
+            } else {
+                titleText = `[${grade}] [${category.split('. ')[1]}] 법무 검토 요청${urgBadge}`;
+            }
+            document.getElementById('out1').innerText = titleText;
+
+            // ② 상세 문의서 (두레이 본문 첨부용)
+            const cValues = getCheckedValues();
+            let pureBodyText = "";
+
+            if (category.startsWith("1.")) {
+                pureBodyText = `1. 형식\n- ${formType}\n\n2. 계약상대방\n- ${partner} ${service ? '(' + service + ')' : ''}\n\n3. 계약기간 및 계약금액(예상액)\n- ${document.getElementById('termAmount').value || '해당 없음'}\n\n4. 계약 목적\n- ${purpose}\n\n5. 검토배경 및 기타 특이사항\n[검토 배경]\n${background}\n\n[기타 특이사항]\n${notes}\n\n[사전 확인 사실관계]\n${cValues}\n\n6. 문의내용\n${coreInquiry}`;
+            } 
+            else if (category.startsWith("3.")) {
+                pureBodyText = `1. 형식\n- ${formType}\n\n2. 검토배경\n[배경 설명]\n${background}\n\n[사전 확인 사실관계]\n${cValues}\n\n3. 문의 내용\n${coreInquiry}\n\n4. 기타 특이사항\n- ${notes}`;
+            }
+            else {
+                pureBodyText = `1. 검토배경 및 기타 특이사항\n[검토 배경]\n${background}\n\n[기타 특이사항]\n${notes}\n\n[사전 확인 사실관계]\n${cValues}\n\n2. 문의내용\n${coreInquiry}`;
+            }
+
+            const metaHeader = `[업무 중요도: ${grade} | 긴급도: ${urgency} | 회신 희망일: ${targetDate}]` + 
+                (grade === "C등급" ? `\n※ C등급 건: Claude 가답안 활용 및 사후 공유 대상 (가답안 파일 별도 첨부)` : "");
+            const doorayBody = `${metaHeader}\n\n${pureBodyText}`;
+            document.getElementById('out2').innerText = doorayBody;
+
+            // ③ Claude AI 입력용 프롬프트
+            const claudePrompt = `당신은 기업 법무팀을 지원하는 전문 법률 어시스턴트입니다. 아래는 사내 현업 부서가 법무팀에 제출한 문의서입니다.
+담당업무 구분과 사실관계를 근거로 다음을 한국어로 정리해 주세요.
+
+1) 검토가 필요한 핵심 법적 쟁점
+2) 관련 법령·규정·계약상 고려사항 (확정적 단정이 아닌 검토 의견 형태)
+3) 부서가 추가로 확인·준비해야 할 사항 및 누락된 정보
+4) 실무적 권고안과 주요 리스크, 필요 시 후속 절차
+5) 마지막에 '법무팀에 보여줄 핵심 문의'를 300자 이내로 다듬어 제시
+
+※ 참고용 검토 의견이며 최종 법률 자문이 아님을 전제로, 사실관계가 불충분한 부분은 명시해 주세요.
+------------------------------------------------------------
+[ 법무팀 문의서 ]
+- 담당업무 구분: ${category}
+- 업무 중요도 등급: ${grade}
+- 작성일: ${new Date().toISOString().split('T')[0]}
+- 회신 희망일: ${targetDate}
+- 긴급도: ${urgency}
+
+${pureBodyText}
+------------------------------------------------------------`;
+            document.getElementById('out3').innerText = claudePrompt;
+
+            document.getElementById('resultModal').classList.add('show');
+            document.body.style.overflow = 'hidden'; 
+        }
+
+        function closeResultModal() {
+            document.getElementById('resultModal').classList.remove('show');
+            document.body.style.overflow = 'auto'; 
+        }
+
+        function copyText(id, btnElement) {
+            const text = document.getElementById(id).innerText;
+            const markCopied = () => {
+                btnElement.innerText = "✅ 복사 완료!";
+                btnElement.style.background = "#059669";
+                setTimeout(() => {
+                    btnElement.innerText = "📋 복사하기";
+                    btnElement.style.background = "";
+                }, 2000);
+            };
+
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(text).then(markCopied).catch(() => fallbackCopy(text, markCopied));
+            } else {
+                fallbackCopy(text, markCopied);
+            }
+        }
+
+        function fallbackCopy(text, callback) {
+            const temp = document.createElement('textarea');
+            temp.value = text;
+            temp.style.position = 'fixed';
+            temp.style.opacity = '0';
+            document.body.appendChild(temp);
+            temp.select();
+            try {
+                document.execCommand('copy');
+                callback();
+            } catch (e) {
+                alert("복사에 실패했습니다. 텍스트를 직접 드래그하여 복사해주세요.");
+            }
+            document.body.removeChild(temp);
+        }
+    </script>
+</body>
+</html>
